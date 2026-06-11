@@ -1,0 +1,238 @@
+@import "tailwindcss";
+
+/*
+  翻牌屋 FELT LAB · 高级牌室主题
+  - 整站锁定暗色, 不做明暗切换
+  - 唯一强调色: 翡翠绿 --accent; 输/危险用 --loss
+  - 圆角体系: 面板 16-20px, 扑克牌 10px, 按钮全圆角(pill)
+  - 数字一律 font-mono
+  - 材质: 玻璃面板(.glass) + 全局胶片颗粒(.grain) + 毡面环境光
+*/
+:root {
+  --background: #07090b;
+  --surface: #101418;
+  --surface-2: #161b20;
+  --line: #232a30;
+  --foreground: #ecefee;
+  --muted: #8d979d;
+  --accent: #3ddc97;
+  --accent-deep: #0d8a60;
+  --loss: #e0635c;
+  --felt: #123227;
+  --felt-edge: #0a1f18;
+  --card-face: #f7f5ef;
+  --card-red: #c93f34;
+  --card-black: #1d2226;
+  --gold: #cdaa6d;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-deep: var(--accent-deep);
+  --color-loss: var(--loss);
+  --font-sans: var(--font-geist-sans), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans CJK SC", sans-serif;
+  --font-mono: var(--font-geist-mono), "SF Mono", "PingFang SC", monospace;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgb(61 220 151 / 0.06), transparent 60%),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: rgb(61 220 151 / 0.25);
+}
+
+/* 全局胶片颗粒: 固定层, 不参与滚动重绘 */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+}
+
+/* 玻璃面板 */
+.glass {
+  background: linear-gradient(165deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0.015));
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 18px 50px rgb(0 0 0 / 0.45);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: var(--surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* 主按钮 */
+.btn-primary {
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #4ce8a6 0%, var(--accent) 45%, #21b57b 100%);
+  color: #03150d;
+  font-weight: 600;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.45),
+    inset 0 -1px 0 rgb(0 0 0 / 0.2),
+    0 6px 22px rgb(61 220 151 / 0.22);
+  transition: filter 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
+}
+.btn-primary:hover {
+  filter: brightness(1.07);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.45),
+    inset 0 -1px 0 rgb(0 0 0 / 0.2),
+    0 8px 30px rgb(61 220 151 / 0.32);
+}
+.btn-primary:active {
+  transform: scale(0.985);
+}
+
+/* 分段选择按钮 */
+.seg {
+  border-radius: 9999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.seg:hover {
+  color: var(--foreground);
+  border-color: rgb(255 255 255 / 0.22);
+}
+.seg[data-on="true"] {
+  border-color: rgb(61 220 151 / 0.65);
+  color: var(--accent);
+  background: rgb(61 220 151 / 0.09);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+/* 牌桌毡面 */
+.felt {
+  background:
+    radial-gradient(ellipse 65% 70% at 50% 32%, #1c4d3a 0%, var(--felt) 52%, var(--felt-edge) 100%);
+  box-shadow:
+    inset 0 4px 36px rgb(0 0 0 / 0.6),
+    inset 0 0 0 1.5px rgb(255 255 255 / 0.05),
+    inset 0 0 120px rgb(0 0 0 / 0.35);
+}
+
+.felt-rail {
+  background:
+    linear-gradient(180deg, #2b3138 0%, #14181c 55%, #1b2025 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    inset 0 -2px 6px rgb(0 0 0 / 0.5),
+    0 36px 110px rgb(0 0 0 / 0.65);
+}
+
+/* 扑克牌面 */
+.playing-card {
+  background: linear-gradient(168deg, #fdfcf8 0%, var(--card-face) 55%, #ebe8de 100%);
+  border-radius: 10px;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    inset 0 0 0 1px rgb(0 0 0 / 0.04),
+    0 6px 16px rgb(0 0 0 / 0.5);
+}
+
+.card-back {
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.07) 0%, transparent 65%),
+    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.045) 0 2.5px, transparent 2.5px 7px),
+    repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.045) 0 2.5px, transparent 2.5px 7px),
+    linear-gradient(165deg, #1d5b45 0%, #0e3326 70%, #0a261c 100%);
+  box-shadow:
+    inset 0 0 0 1.5px rgb(205 170 109 / 0.4),
+    inset 0 0 0 4px rgb(0 0 0 / 0.15),
+    0 6px 16px rgb(0 0 0 / 0.5);
+}
+
+/* 毡面金色镶边 */
+.felt-ring {
+  position: absolute;
+  border-radius: inherit;
+  border: 1px solid rgb(205 170 109 / 0.22);
+  pointer-events: none;
+}
+
+/* 顶部聚光 */
+.table-light {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(46% 38% at 50% 30%, rgb(255 255 255 / 0.05), transparent 70%);
+}
+
+/* 筹码 */
+.chip {
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 50% 38%, #35e0a0 0%, var(--accent-deep) 68%, #07543b 100%);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.4),
+    inset 0 -1px 2px rgb(0 0 0 / 0.45),
+    0 2px 5px rgb(0 0 0 / 0.55);
+  border: 2px dashed rgb(255 255 255 / 0.55);
+}
+
+
+/* 加注滑块 */
+input[type='range'].bet-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--accent) var(--fill, 0%), var(--line) var(--fill, 0%));
+  outline: none;
+}
+input[type='range'].bet-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #4ce8a6, #21b57b);
+  border: 2px solid #03150d;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.6), 0 0 0 4px rgb(61 220 151 / 0.15);
+  cursor: pointer;
+}
+input[type='range'].bet-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #4ce8a6, #21b57b);
+  border: 2px solid #03150d;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.6);
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

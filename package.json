@@ -1,0 +1,36 @@
+{
+  "name": "poker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test:engine": "tsx scripts/sim-test.ts",
+    "test:e2e": "tsx scripts/e2e-test.ts",
+    "gen:ranking": "tsx scripts/gen-ranking.ts",
+    "gen:hero": "cd video/hero && npx --yes hyperframes@0.6.88 render --output ../../public/hero.mp4",
+    "gen:promo": "cd video/promo && npx --yes hyperframes@0.6.88 render --output ../../public/promo.mp4"
+  },
+  "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
+    "motion": "^12.40.0",
+    "next": "16.2.9",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.9",
+    "puppeteer-core": "^25.1.0",
+    "tailwindcss": "^4",
+    "tsx": "^4.22.4",
+    "typescript": "^5"
+  }
+}
