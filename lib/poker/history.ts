@@ -367,8 +367,9 @@ export function handToText(hh: HandHistory, revealPersonalities: boolean): strin
   if (heroR?.handName) {
     const oppShown = hh.results.filter((r) => !r.isHero && r.shown && r.handName);
     if (oppShown.length) {
+      const rel = heroR.net > 0 ? '击败' : heroR.net < 0 ? '不敌' : '平分于';
       const cmp = oppShown
-        .map((o) => `你的${heroR.handName}${heroR.net >= 0 ? '击败' : '不敌'}${o.name}的${o.handName}`)
+        .map((o) => `你的${heroR.handName}${rel}${o.name}的${o.handName}`)
         .join('; ');
       lines.push(`[摊牌对比(程序判定): ${cmp}]`);
     }
