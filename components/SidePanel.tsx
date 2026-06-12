@@ -149,7 +149,7 @@ export function SidePanel() {
                     key={s.id}
                     className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs ${
                       s.isHero ? 'bg-accent/10 border border-accent/30' : 'bg-background/30'
-                    }`}
+                    } ${s.out ? 'opacity-55' : ''}`}
                   >
                     <span className="font-mono text-muted w-4">
                       {i === 0 ? <Crown size={13} weight="fill" className="text-[#cdaa6d]" /> : i + 1}
@@ -159,6 +159,11 @@ export function SidePanel() {
                       {s.name}
                       {s.isHero ? ' (你)' : ''}
                     </span>
+                    {s.out && (
+                      <span className="text-[9px] px-1.5 py-px rounded-full border border-line text-muted/70 shrink-0">
+                        已下桌
+                      </span>
+                    )}
                     <span
                       className="ml-auto font-mono"
                       style={{ color: s.net >= 0 ? 'var(--accent)' : 'var(--loss)' }}
@@ -210,7 +215,7 @@ export function SidePanel() {
                             </span>
                           )}
                           <span className="ml-auto font-mono text-[10px] text-muted">
-                            后手 {(s.stack / bb).toFixed(0)}BB
+                            {s.out ? '已下桌' : `后手 ${(s.stack / bb).toFixed(0)}BB`}
                           </span>
                         </div>
                         {img && img.hands > 0 ? (

@@ -242,6 +242,7 @@ export default function ReviewPage() {
                 >
                   {b.name} · <span className="text-accent">{p?.nameZh ?? '未知'}</span>
                   {b.rebuys > 0 && <span className="text-muted"> (补码{b.rebuys}次)</span>}
+                  {b.out && <span className="text-muted"> (中途下桌)</span>}
                 </span>
               );
             })}

@@ -6,9 +6,11 @@ import Link from 'next/link';
 import { motion, useReducedMotion } from 'motion/react';
 import {
   ArrowRight,
+  ArrowsClockwise,
   Eye,
   EyeSlash,
   Play,
+  SignOut,
   Sparkle,
   Strategy,
   UsersThree,
@@ -28,6 +30,7 @@ export default function SetupPage() {
   const [tableSize, setTableSize] = useState<number>(6);
   const [showPersonalities, setShowPersonalities] = useState(true);
   const [startingBB, setStartingBB] = useState<number>(100);
+  const [botRebuy, setBotRebuy] = useState(true);
   const [lastSession, setLastSession] = useState<{
     hands: number;
     netBB: number;
@@ -68,6 +71,7 @@ export default function SetupPage() {
       sb: 1,
       bb: 2,
       targetHands: null,
+      botRebuy,
       opponents,
     });
     router.push('/table');
@@ -235,6 +239,25 @@ export default function SetupPage() {
                   className="seg flex items-center gap-1.5 px-3.5 py-2 text-sm"
                 >
                   <EyeSlash size={15} /> 隐藏
+                </button>
+              </div>
+            </div>
+            <div>
+              <div className="text-sm font-medium mb-2.5">对手破产后</div>
+              <div className="flex gap-1.5">
+                <button
+                  data-on={botRebuy}
+                  onClick={() => setBotRebuy(true)}
+                  className="seg flex items-center gap-1.5 px-3.5 py-2 text-sm"
+                >
+                  <ArrowsClockwise size={15} /> 自动补码
+                </button>
+                <button
+                  data-on={!botRebuy}
+                  onClick={() => setBotRebuy(false)}
+                  className="seg flex items-center gap-1.5 px-3.5 py-2 text-sm"
+                >
+                  <SignOut size={15} /> 直接下桌
                 </button>
               </div>
             </div>

@@ -51,6 +51,8 @@ export interface SessionConfig {
   sb: number;
   bb: number;
   targetHands: number | null;
+  // 对手破产后自动补码(false = 直接下桌); 旧记录缺失视为 true
+  botRebuy: boolean;
   opponents: OpponentConfig[];
 }
 
@@ -63,6 +65,8 @@ export interface Seat {
   rebuys: number;
   // 头像池编号(每局随机分配, 与名字不绑定); 英雄为 null
   avatarId: number | null;
+  // 已破产下桌(仅 botRebuy=false 时出现); 保留座位用于排行榜与复盘
+  out: boolean;
 }
 
 export type Phase = 'idle' | 'playing' | 'handEnd' | 'over';
@@ -77,6 +81,7 @@ export interface SessionRecord {
     rebuys: number;
     stack?: number; // 终局后手(旧记录可能缺失)
     avatarId?: number | null;
+    out?: boolean;
   }[];
   histories: HandHistory[];
   // 结构化速评; 旧会话记录可能是纯文本
@@ -166,6 +171,7 @@ export const useGame = create<GameStore>((set, get) => {
         rebuys: s.rebuys,
         stack: s.stack,
         avatarId: s.avatarId,
+        out: s.out,
       })),
       histories,
       handComments,
@@ -182,27 +188,37 @@ export const useGame = create<GameStore>((set, get) => {
   }
 
   function beginHand() {
-    const { config, seats, button } = get();
+    const { config, seats } = get();
     if (!config) return;
-    // 机器人自动补码; 英雄破产则结束
+    // 机器人破产: 自动补码 或 下桌(座位保留, 不再入局)
     for (const s of seats) {
-      if (!s.isHero && s.stack < config.bb) {
+      if (s.isHero || s.out || s.stack >= config.bb) continue;
+      if (config.botRebuy !== false) {
         s.stack = config.startingBB * config.bb;
         s.rebuys++;
+      } else {
+        s.out = true;
       }
     }
     const hero = seats.find((s) => s.isHero)!;
-    if (hero.stack < config.bb) {
+    const active = seats.filter((s) => !s.out);
+    // 英雄破产或对手全部下桌: 结束训练
+    if (hero.stack < config.bb || active.length < 2) {
       get().endSession();
       return;
     }
+    // 按钮位推进时跳过已下桌的座位
+    let button = get().button % seats.length;
+    while (seats[button].out) button = (button + 1) % seats.length;
+    if (button !== get().button) set({ button });
     const handNo = get().handNo + 1;
     const hand = createHand({
       handNo,
       sb: config.sb,
       bb: config.bb,
-      button,
-      players: seats.map((s) => ({
+      // 引擎的 button 是入局玩家数组的索引, 需从全量座位换算
+      button: active.findIndex((s) => s.id === seats[button].id),
+      players: active.map((s) => ({
         id: s.id,
         name: s.name,
         isHero: s.isHero,
@@ -555,6 +571,7 @@ export const useGame = create<GameStore>((set, get) => {
           stack: config.startingBB * config.bb,
           rebuys: 0,
           avatarId: null,
+          out: false,
         },
         ...config.opponents.map((o, i) => ({
           id: `bot-${i}`,
@@ -567,6 +584,7 @@ export const useGame = create<GameStore>((set, get) => {
           stack: config.startingBB * config.bb,
           rebuys: 0,
           avatarId: pool[i % pool.length],
+          out: false,
         })),
       ];
       set({
@@ -698,9 +716,11 @@ export const useGame = create<GameStore>((set, get) => {
         stack: s.stack ?? rec.config.startingBB * rec.config.bb,
         rebuys: s.rebuys,
         avatarId: s.avatarId ?? null,
+        out: s.out ?? false,
       }));
       set({
-        config: rec.config,
+        // 旧存档缺少 botRebuy 字段, 默认自动补码
+        config: { ...rec.config, botRebuy: rec.config.botRebuy ?? true },
         seats,
         button: rec.button ?? 0,
         // 刷新时未打完的那手作废, 沿用其手号重新开始

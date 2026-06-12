@@ -12,7 +12,8 @@
     "gen:ranking": "tsx scripts/gen-ranking.ts",
     "gen:hero": "cd video/hero && npx --yes hyperframes@0.6.88 render --output ../../public/hero.mp4",
     "gen:promo": "cd video/promo && npx --yes hyperframes@0.6.88 render --output ../../public/promo.mp4",
-    "test:facts": "tsx scripts/facts-test.ts"
+    "test:facts": "tsx scripts/facts-test.ts",
+    "test:bust": "tsx scripts/bust-test.ts"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
