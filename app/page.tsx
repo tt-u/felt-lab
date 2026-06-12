@@ -28,16 +28,21 @@ export default function SetupPage() {
   const [tableSize, setTableSize] = useState<number>(6);
   const [showPersonalities, setShowPersonalities] = useState(true);
   const [startingBB, setStartingBB] = useState<number>(100);
-  const [lastSession, setLastSession] = useState<{ hands: number; netBB: number } | null>(null);
+  const [lastSession, setLastSession] = useState<{
+    hands: number;
+    netBB: number;
+    inProgress: boolean;
+  } | null>(null);
 
   useEffect(() => {
     // 挂载后读取上次训练记录(浏览器存储)
     const rec = loadSessionRecord();
-    if (rec?.histories.length) {
+    if (rec?.histories.length || rec?.inProgress) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLastSession({
         hands: rec.histories.length,
         netBB: rec.histories.reduce((s, h) => s + h.heroNet / h.bb, 0),
+        inProgress: !!rec.inProgress,
       });
     }
   }, []);
@@ -128,8 +133,20 @@ export default function SetupPage() {
             ))}
           </div>
 
-          {/* 上次训练入口 */}
-          {lastSession && (
+          {/* 上次训练入口: 未打完的优先提供"继续" */}
+          {lastSession?.inProgress ? (
+            <Link
+              href="/table"
+              className="mt-5 inline-flex items-center gap-2 text-xs px-3.5 py-2 rounded-full glass text-accent border border-accent/30 hover:border-accent transition-colors"
+            >
+              有一局未打完: 已打 {lastSession.hands} 手,{' '}
+              <span className="font-mono">
+                {lastSession.netBB >= 0 ? '+' : ''}
+                {lastSession.netBB.toFixed(1)}BB
+              </span>
+              · 继续训练 <ArrowRight size={12} />
+            </Link>
+          ) : lastSession ? (
             <Link
               href="/review"
               className="mt-5 inline-flex items-center gap-2 text-xs px-3.5 py-2 rounded-full glass text-muted hover:text-accent transition-colors"
@@ -146,7 +163,7 @@ export default function SetupPage() {
               </span>
               · 查看复盘 <ArrowRight size={12} />
             </Link>
-          )}
+          ) : null}
 
           <ul className="mt-9 space-y-5 text-sm max-w-[46ch]">
             <li className="flex gap-3.5">

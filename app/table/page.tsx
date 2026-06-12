@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   ChartLine,
   List,
+  Pause,
+  Play,
   SpeakerHigh,
   SpeakerSlash,
   X,
@@ -33,6 +35,9 @@ export default function TablePage() {
   const nextHand = useGame((s) => s.nextHand);
   const endSession = useGame((s) => s.endSession);
   const holdAutoNext = useGame((s) => s.holdAutoNext);
+  const paused = useGame((s) => s.paused);
+  const pause = useGame((s) => s.pause);
+  const resume = useGame((s) => s.resume);
   // version 驱动重渲染(引擎对象原地变更)
   useGame((s) => s.version);
 
@@ -45,9 +50,9 @@ export default function TablePage() {
     setMutedState(isMuted());
   }, []);
 
-  // 直接访问 /table 而没有会话时回到设置页
+  // 没有内存会话时先尝试从存档还原(刷新恢复), 失败才回设置页
   useEffect(() => {
-    if (!config) router.replace('/');
+    if (!config && !useGame.getState().restore()) router.replace('/');
   }, [config, router]);
 
   // 会话结束跳转复盘
@@ -123,6 +128,13 @@ export default function TablePage() {
             {netBB.toFixed(1)}BB
           </span>
           <button
+            onClick={() => (paused ? resume() : pause())}
+            className="p-1.5 rounded-full border border-line text-muted hover:text-accent hover:border-accent transition-colors"
+            aria-label={paused ? '继续' : '暂停'}
+          >
+            {paused ? <Play size={14} /> : <Pause size={14} />}
+          </button>
+          <button
             onClick={toggleMute}
             className="p-1.5 rounded-full border border-line text-muted hover:text-foreground transition-colors"
             aria-label={muted ? '开启音效' : '静音'}
@@ -197,24 +209,47 @@ export default function TablePage() {
         )}
       </div>
 
-      {/* 高光时刻横幅 */}
+      {/* 高光时刻横幅: 只动画 transform/opacity(合成器处理), 滤镜动画会逐帧重算导致掉帧 */}
       <AnimatePresence>
         {banner && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8, filter: 'blur(8px)' }}
-            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+            initial={{ opacity: 0, scale: 0.8, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 1.05 }}
             transition={{ type: 'spring', stiffness: 220, damping: 18 }}
-            className="fixed inset-x-0 top-[30%] z-40 flex flex-col items-center pointer-events-none"
+            className="fixed inset-x-0 top-[30%] z-40 flex flex-col items-center pointer-events-none will-change-transform"
           >
             <div
-              className={`text-4xl sm:text-5xl font-bold tracking-tight drop-shadow-[0_4px_30px_rgb(0_0_0/0.6)] ${
+              className={`text-4xl sm:text-5xl font-bold tracking-tight [text-shadow:0_4px_30px_rgb(0_0_0/0.6)] ${
                 banner.kind === 'badbeat' ? 'text-[var(--loss)]' : 'text-accent'
               }`}
             >
               {banner.title}
             </div>
             <div className="mt-2 text-sm text-foreground/80">{banner.sub}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 暂停遮罩: 定时器已清空, 进度已存档 */}
+      <AnimatePresence>
+        {paused && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[45] flex items-center justify-center bg-background/85 backdrop-blur-sm"
+          >
+            <div className="glass rounded-3xl px-10 py-10 flex flex-col items-center gap-4 text-center">
+              <span className="font-mono text-xs text-accent tracking-[0.4em]">FELT LAB</span>
+              <p className="text-lg font-medium">已暂停</p>
+              <p className="text-xs text-muted">进度已保存, 刷新或关闭后回来都能继续</p>
+              <button onClick={resume} className="btn-primary px-8 py-3 text-sm mt-2 flex items-center gap-2">
+                <Play size={15} weight="fill" />
+                继续训练
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

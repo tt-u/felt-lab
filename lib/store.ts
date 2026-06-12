@@ -82,6 +82,10 @@ export interface SessionRecord {
   // 结构化速评; 旧会话记录可能是纯文本
   handComments: Record<number, HandCommentData | string>;
   endedAt: string;
+  // 进行中会话(刷新后可还原继续); 旧记录缺失视为已结束
+  inProgress?: boolean;
+  button?: number;
+  handNo?: number;
 }
 
 const STORAGE_KEY = 'feltlab-session';
@@ -96,6 +100,8 @@ interface GameStore {
   handComments: Record<number, HandCommentData | string>;
   phase: Phase;
   version: number;
+  // 暂停中: 机器人定时器全部清除, 英雄操作被拦截
+  paused: boolean;
   // 全下摊牌时各玩家的实时胜率
   equities: Record<string, number> | null;
   // 英雄当前成牌与对范围胜率(行动条仪表)
@@ -111,6 +117,11 @@ interface GameStore {
   reset: () => void;
   // 查看兔子洞时暂停自动开下一手
   holdAutoNext: () => void;
+  // 暂停 / 继续(进度已持久化, 刷新后可还原)
+  pause: () => void;
+  resume: () => void;
+  // 从浏览器存储还原进行中的会话(刷新恢复), 成功返回 true
+  restore: () => boolean;
 }
 
 const rng: Rng = secureRng();
@@ -144,7 +155,7 @@ export const useGame = create<GameStore>((set, get) => {
   }
 
   function persist() {
-    const { config, seats, histories, handComments } = get();
+    const { config, seats, histories, handComments, phase, button, handNo } = get();
     if (!config || typeof window === 'undefined') return;
     const record: SessionRecord = {
       config,
@@ -159,6 +170,9 @@ export const useGame = create<GameStore>((set, get) => {
       histories,
       handComments,
       endedAt: new Date().toISOString(),
+      inProgress: phase !== 'over',
+      button,
+      handNo,
     };
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(record));
@@ -211,6 +225,8 @@ export const useGame = create<GameStore>((set, get) => {
     });
     play('deal');
     updateHeroRead(hand);
+    // 每手开局即存档: 中途刷新可从本手重新开始(筹码为上手结束状态)
+    persist();
     bump();
     pump();
   }
@@ -422,7 +438,7 @@ export const useGame = create<GameStore>((set, get) => {
   // 驱动机器人行动与发牌
   function pump() {
     const { hand } = get();
-    if (!hand || get().phase !== 'playing') return;
+    if (!hand || get().phase !== 'playing' || get().paused) return;
 
     if (hand.result) {
       finishHand();
@@ -509,6 +525,7 @@ export const useGame = create<GameStore>((set, get) => {
     handComments: {},
     phase: 'idle',
     version: 0,
+    paused: false,
     equities: null,
     heroRead: null,
     banner: null,
@@ -562,6 +579,7 @@ export const useGame = create<GameStore>((set, get) => {
         handComments: {},
         phase: 'playing',
         version: 0,
+        paused: false,
         equities: null,
         heroRead: null,
         banner: null,
@@ -572,7 +590,7 @@ export const useGame = create<GameStore>((set, get) => {
 
     heroAct(action) {
       const { hand, phase } = get();
-      if (!hand || phase !== 'playing' || hand.toAct === null) return;
+      if (!hand || phase !== 'playing' || get().paused || hand.toAct === null) return;
       if (!hand.players[hand.toAct].isHero) return;
       const boardBefore = hand.board.length;
       try {
@@ -594,7 +612,7 @@ export const useGame = create<GameStore>((set, get) => {
     },
 
     nextHand() {
-      if (get().phase !== 'handEnd') return;
+      if (get().phase !== 'handEnd' || get().paused) return;
       const next = get().button + 1;
       set({ button: next % get().seats.length });
       clearTimers();
@@ -603,13 +621,25 @@ export const useGame = create<GameStore>((set, get) => {
 
     endSession() {
       clearTimers();
+      // 先置 over 再存档, 使 inProgress 正确落为 false
+      set({ phase: 'over', hand: null, paused: false });
       persist();
-      set({ phase: 'over', hand: null });
     },
 
     reset() {
       clearTimers();
       sessionSeq++;
+      // 主动放弃的会话不再提供"继续"
+      try {
+        const raw = sessionStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const j = JSON.parse(raw);
+          j.inProgress = false;
+          sessionStorage.setItem(STORAGE_KEY, JSON.stringify(j));
+        }
+      } catch {
+        // 存储异常忽略
+      }
       set({
         config: null,
         seats: [],
@@ -620,6 +650,7 @@ export const useGame = create<GameStore>((set, get) => {
         handComments: {},
         phase: 'idle',
         version: 0,
+        paused: false,
         equities: null,
         heroRead: null,
         banner: null,
@@ -630,6 +661,63 @@ export const useGame = create<GameStore>((set, get) => {
     holdAutoNext() {
       // 查看兔子洞时暂停自动开下一手, 由用户点"下一手"继续
       if (get().phase === 'handEnd') clearTimers();
+    },
+
+    pause() {
+      const phase = get().phase;
+      if ((phase !== 'playing' && phase !== 'handEnd') || get().paused) return;
+      clearTimers();
+      // 横幅的自动消失定时器已被清掉, 直接收起
+      set({ paused: true, banner: null });
+      persist();
+    },
+
+    resume() {
+      if (!get().paused) return;
+      set({ paused: false });
+      if (get().phase === 'playing') {
+        pump();
+      } else if (get().phase === 'handEnd') {
+        later(2200, () => {
+          if (get().phase === 'handEnd') get().nextHand();
+        });
+      }
+    },
+
+    restore() {
+      const rec = loadSessionRecord();
+      if (!rec?.inProgress || !rec.config || !rec.seats?.length) return false;
+      clearTimers();
+      sessionSeq++;
+      let botIdx = 0;
+      const seats: Seat[] = rec.seats.map((s) => ({
+        id: s.isHero ? 'hero' : `bot-${botIdx++}`,
+        name: s.name,
+        isHero: s.isHero,
+        personality: s.personality,
+        stack: s.stack ?? rec.config.startingBB * rec.config.bb,
+        rebuys: s.rebuys,
+        avatarId: s.avatarId ?? null,
+      }));
+      set({
+        config: rec.config,
+        seats,
+        button: rec.button ?? 0,
+        // 刷新时未打完的那手作废, 沿用其手号重新开始
+        handNo: rec.histories[rec.histories.length - 1]?.handNo ?? 0,
+        hand: null,
+        histories: rec.histories,
+        handComments: rec.handComments ?? {},
+        phase: 'playing',
+        version: 0,
+        paused: false,
+        equities: null,
+        heroRead: null,
+        banner: null,
+        rabbit: null,
+      });
+      beginHand();
+      return true;
     },
   };
 });
