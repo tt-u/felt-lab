@@ -243,25 +243,6 @@ export default function SetupPage() {
               </div>
             </div>
             <div>
-              <div className="text-sm font-medium mb-2.5">对手破产后</div>
-              <div className="flex gap-1.5">
-                <button
-                  data-on={botRebuy}
-                  onClick={() => setBotRebuy(true)}
-                  className="seg flex items-center gap-1.5 px-3.5 py-2 text-sm"
-                >
-                  <ArrowsClockwise size={15} /> 自动补码
-                </button>
-                <button
-                  data-on={!botRebuy}
-                  onClick={() => setBotRebuy(false)}
-                  className="seg flex items-center gap-1.5 px-3.5 py-2 text-sm"
-                >
-                  <SignOut size={15} /> 直接下桌
-                </button>
-              </div>
-            </div>
-            <div>
               <div className="text-sm font-medium mb-2.5">起始筹码</div>
               <div className="flex gap-1.5">
                 {STACK_OPTIONS.map((s) => (
@@ -277,6 +258,26 @@ export default function SetupPage() {
               </div>
             </div>
           </div>
+
+          <div>
+            <div className="text-sm font-medium mb-2.5">对手破产后</div>
+            <div className="flex gap-1.5">
+              <button
+                data-on={botRebuy}
+                onClick={() => setBotRebuy(true)}
+                className="seg flex items-center gap-1.5 px-3.5 py-2 text-sm"
+              >
+                <ArrowsClockwise size={15} /> 自动补码
+              </button>
+              <button
+                data-on={!botRebuy}
+                onClick={() => setBotRebuy(false)}
+                className="seg flex items-center gap-1.5 px-3.5 py-2 text-sm"
+              >
+                <SignOut size={15} /> 直接下桌
+              </button>
+            </div>
+          </div>
           <p className="text-xs text-muted leading-relaxed -mt-2">
             {showPersonalities
               ? '座位上会标出对手风格, 适合练针对性调整。'
@@ -285,7 +286,9 @@ export default function SetupPage() {
           </p>
 
           <div className="pt-3 border-t border-white/10">
-            <p className="text-xs text-muted mb-4">盲注 1/2 · 现金桌规则, 对手破产自动补码</p>
+            <p className="text-xs text-muted mb-4">
+              盲注 1/2 · 现金桌规则, 对手破产{botRebuy ? '自动补码' : '直接下桌'}
+            </p>
             <button onClick={start} className="btn-primary w-full flex items-center justify-center gap-2 py-3.5 text-[15px]">
               <Play size={18} weight="fill" />
               开始训练
