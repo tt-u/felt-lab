@@ -19,6 +19,7 @@ import { PokerTable } from '@/components/PokerTable';
 import { ActionBar } from '@/components/ActionBar';
 import { SidePanel } from '@/components/SidePanel';
 import { RabbitHole } from '@/components/RabbitHole';
+import { HighlightBanner } from '@/components/HighlightBanner';
 
 export default function TablePage() {
   const router = useRouter();
@@ -209,27 +210,8 @@ export default function TablePage() {
         )}
       </div>
 
-      {/* 高光时刻横幅: 只动画 transform/opacity(合成器处理), 滤镜动画会逐帧重算导致掉帧 */}
-      <AnimatePresence>
-        {banner && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            transition={{ type: 'spring', stiffness: 220, damping: 18 }}
-            className="fixed inset-x-0 top-[30%] z-40 flex flex-col items-center pointer-events-none will-change-transform"
-          >
-            <div
-              className={`text-4xl sm:text-5xl font-bold tracking-tight [text-shadow:0_4px_30px_rgb(0_0_0/0.6)] ${
-                banner.kind === 'badbeat' ? 'text-[var(--loss)]' : 'text-accent'
-              }`}
-            >
-              {banner.title}
-            </div>
-            <div className="mt-2 text-sm text-foreground/80">{banner.sub}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* 高光时刻横幅 */}
+      <AnimatePresence>{banner && <HighlightBanner banner={banner} />}</AnimatePresence>
 
       {/* 暂停遮罩: 定时器已清空, 进度已存档 */}
       <AnimatePresence>
